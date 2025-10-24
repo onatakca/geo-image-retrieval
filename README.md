@@ -12,6 +12,8 @@ Task is that of place recognition: we have 1000 gallery images and 500 query ima
 
 In the second assignment, we are trying out BoW approach as a baseline. For each image extract 50 ORB keypoints, create a matrix of N_of_query_images x N_of_collection_images and we're using K-means to cluster them, then we're using centroids to create histograms for each image and then based on it we're creating vectors for all images, which are then compared with similarity metric to find the relevant images for a query.
 
+- [DONE] BASELINE: BoW using ORB features
+
 ## Upgrades
 
 Upgrades can be (logically ordered as improvements):
