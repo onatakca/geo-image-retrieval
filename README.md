@@ -36,3 +36,9 @@ Upgrades can be (logically ordered as improvements):
 - [ ] Recall @1,5,10,20 (official metrics)
 - [ ] mAP
 - [ ] Latency & memory (to see if centroids approach is faster)
+
+
+### To run baseline.py
+1. python3 -m venv venv
+2. pip install -r requirements.txt
+3. python baseline.py
