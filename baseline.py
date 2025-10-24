@@ -9,7 +9,7 @@ def extract_features(image_paths, n_features=50):
     orb = cv2.ORB_create(nfeatures=n_features)
     all_descriptors = []
     
-    for path in tqdm(image_paths, desc="extract features"):
+    for path in tqdm(image_paths):
         img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
         if img is None:
             continue
@@ -30,7 +30,7 @@ def create_bow_vectors(image_paths, kmeans, n_features=50):
     orb = cv2.ORB_create(nfeatures=n_features)
     bow_vectors = []
     
-    for path in tqdm(image_paths, desc="Creating BoW vectors"):
+    for path in tqdm(image_paths):
         img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
         if img is None:
             bow_vectors.append(np.zeros(kmeans.n_clusters))
