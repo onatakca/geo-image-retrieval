@@ -22,7 +22,6 @@ def extract_features(image_paths, n_features=500):
 
 
 def build_vocabulary(descriptors, n_clusters=2000):
-    print(f"Building vocabulary with {n_clusters} words...")
     kmeans = MiniBatchKMeans(n_clusters=n_clusters, random_state=42, batch_size=1000)
     kmeans.fit(descriptors)
     return kmeans

@@ -42,15 +42,12 @@ def create_bow_vectors(image_paths, kmeans, n_features=50):
             bow_vectors.append(np.zeros(kmeans.n_clusters))
             continue
         
-        # Assign descriptors to visual words
         words = kmeans.predict(descriptors)
         
-        # Create histogram
         histogram = np.zeros(kmeans.n_clusters)
         for word in words:
             histogram[word] += 1
         
-        # L2 normalize
         if np.linalg.norm(histogram) > 0:
             histogram = histogram / np.linalg.norm(histogram)
         
