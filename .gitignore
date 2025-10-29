@@ -24,3 +24,4 @@ core.*
 .gitignore
 .gitmodules
 
+venv
