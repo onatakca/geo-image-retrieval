@@ -1,6 +1,8 @@
 import cv2
 import numpy as np
 import json
+import os
+import pandas as pd
 from sklearn.cluster import MiniBatchKMeans
 from tqdm import tqdm
 
@@ -67,47 +69,64 @@ def compute_idf(bow_vectors):
     return idf
 
 
+def recall(ranks, pidx, ks):
+    recall_at_k = np.zeros(len(ks))
+    for qidx in range(ranks.shape[0]):
+        for i, k in enumerate(ks):
+            if np.sum(np.isin(ranks[qidx,:k], pidx[qidx])) > 0:
+                recall_at_k[i:] += 1
+                break
+
+    recall_at_k /= ranks.shape[0]
+    return recall_at_k
+
+def apk(pidx, rank, k):
+    if len(rank)>k:
+        rank = rank[:k]
+
+    if len(pidx) == 0 or k == 0:
+        return 0.0
+
+    score = 0.0
+    num_hits = 0.0
+
+    for i,p in enumerate(rank):
+        if p in pidx and p not in rank[:i]:
+            num_hits += 1.0
+            score += num_hits / (i+1.0)
+
+    return score / min(len(pidx), k)
+
+def mapk(ranks, pidxs, k):
+    return np.mean([apk(a,p,k) for a,p in zip(pidxs, ranks)])
+
+def mapk_many(ranks, pidxs, ks):
+    return np.array([mapk(ranks, pidxs, k) for k in ks], dtype=float)
+
 def evaluate(query_vectors, db_vectors, ground_truth):
-    recalls = {1: 0, 5: 0, 10: 0, 20: 0}
-    average_precisions = []
-    
-    for q_idx in range(len(query_vectors)):
-        similarities = np.dot(db_vectors, query_vectors[q_idx])
-        top_indices = np.argsort(similarities)[::-1]
-        relevant = set(ground_truth.get(q_idx, []))
-        
-        for k in [1, 5, 10, 20]:
-            retrieved = set(top_indices[:k])
-            if len(relevant & retrieved) > 0:
-                recalls[k] += 1
-        
-        if len(relevant) > 0:
-            precisions = []
-            num_relevant_found = 0
-            
-            for i, db_idx in enumerate(top_indices[:20]):
-                if db_idx in relevant:
-                    num_relevant_found += 1
-                    precision_at_i = num_relevant_found / (i + 1)
-                    precisions.append(precision_at_i)
-            
-            if len(precisions) > 0:
-                average_precisions.append(np.mean(precisions))
-    
-    for k in recalls:
-        recalls[k] = recalls[k] / len(query_vectors)
-    
-    mAP = np.mean(average_precisions) if len(average_precisions) > 0 else 0
-    return recalls, mAP
+    similarities = np.dot(query_vectors, db_vectors.T)
+
+    ranks = np.argsort(-similarities, axis=1)
+
+    Q = similarities.shape[0]
+    pidx = [np.array(ground_truth.get(q, []), dtype=int) for q in range(Q)]
+
+    ks = [1, 5, 10, 20]
+    recall_at_k = recall(ranks, pidx, ks)
+    mAPs = mapk_many(ranks, pidx, ks)
+
+    recalls = {k: r for k, r in zip(ks, recall_at_k)}
+
+    return recalls, mAPs
 
 
 def main():
     N_FEATURES = 500
     VOCAB_SIZE = 2000
     
-    with open('data/query/query_lite.json', 'r') as f:
+    with open('data/query/query.json', 'r') as f:
         query_data = json.load(f)
-    with open('data/database/database_lite.json', 'r') as f:
+    with open('data/database/database.json', 'r') as f:
         db_data = json.load(f)
     
     query_paths = ['data/' + p for p in query_data['im_paths']]
@@ -132,12 +151,40 @@ def main():
                 relevant.append(db_idx)
         ground_truth[q_idx] = relevant
     
-    recalls, mAP = evaluate(query_vectors, db_vectors, ground_truth)
-    
+    recalls, mAPs = evaluate(query_vectors, db_vectors, ground_truth)
+
     print("for SIFT")
-    for k, recall in recalls.items():
-        print(f"recall is {k}: {recall:.4f} ({recall*100:.2f}%)")
-    print(f"mAP: {mAP:.4f} ({mAP*100:.2f}%)")
+    ks = [1, 5, 10, 20]
+    for k, recall_val, map_val in zip(ks, [recalls[k] for k in ks], mAPs):
+        print(f"Recall@{k}: {recall_val*100:.2f}%   mAP@{k}: {map_val*100:.2f}%")
+
+    # Save results to CSV
+    results_dict = {
+        "models_name": "SIFT_BoW_TF-IDF",
+        "Recall@1": recalls[1] * 100,
+        "Recall@5": recalls[5] * 100,
+        "Recall@10": recalls[10] * 100,
+        "Recall@20": recalls[20] * 100,
+        "mAP@1": mAPs[0] * 100,
+        "mAP@5": mAPs[1] * 100,
+        "mAP@10": mAPs[2] * 100,
+        "mAP@20": mAPs[3] * 100
+    }
+
+    csv_path = "results/sift/sift_results.csv"
+    os.makedirs(os.path.dirname(csv_path), exist_ok=True)
+
+    if os.path.exists(csv_path):
+        df = pd.read_csv(csv_path)
+        if "SIFT_BoW_TF-IDF" in df['models_name'].values:
+            df.loc[df['models_name'] == "SIFT_BoW_TF-IDF"] = pd.Series(results_dict)
+        else:
+            df = pd.concat([df, pd.DataFrame([results_dict])], ignore_index=True)
+    else:
+        df = pd.DataFrame([results_dict])
+
+    df.to_csv(csv_path, index=False)
+    print(f"\nResults saved to {csv_path}")
 
 if __name__ == "__main__":
     main()

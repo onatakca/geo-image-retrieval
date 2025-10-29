@@ -1,6 +1,8 @@
 import cv2
 import numpy as np
 import json
+import os
+import pandas as pd
 from sklearn.cluster import MiniBatchKMeans
 from tqdm import tqdm
 
@@ -71,6 +73,9 @@ def apk(pidx, rank, k):
     if len(rank)>k:
         rank = rank[:k]
 
+    if len(pidx) == 0 or k == 0:
+        return 0.0
+
     score = 0.0
     num_hits = 0.0
 
@@ -106,9 +111,9 @@ def evaluate(query_vectors, db_vectors, ground_truth):
 
 
 def main():
-    with open('data/query/query_lite.json', 'r') as f:
+    with open('data/query/query.json', 'r') as f:
         query_data = json.load(f)
-    with open('data/database/database_lite.json', 'r') as f:
+    with open('data/database/database.json', 'r') as f:
         db_data = json.load(f)
     
     query_paths = ['data/' + p for p in query_data['im_paths']]
@@ -134,6 +139,34 @@ def main():
     ks = [1, 5, 10, 20]
     for k, recall_val, map_val in zip(ks, [recalls[k] for k in ks], mAPs):
         print(f"Recall@{k}: {recall_val*100:.2f}%   mAP@{k}: {map_val*100:.2f}%")
+
+    # Save results to CSV
+    results_dict = {
+        "models_name": "ORB_BoW_baseline",
+        "Recall@1": recalls[1] * 100,
+        "Recall@5": recalls[5] * 100,
+        "Recall@10": recalls[10] * 100,
+        "Recall@20": recalls[20] * 100,
+        "mAP@1": mAPs[0] * 100,
+        "mAP@5": mAPs[1] * 100,
+        "mAP@10": mAPs[2] * 100,
+        "mAP@20": mAPs[3] * 100
+    }
+
+    csv_path = "results/baseline/baseline_results.csv"
+    os.makedirs(os.path.dirname(csv_path), exist_ok=True)
+
+    if os.path.exists(csv_path):
+        df = pd.read_csv(csv_path)
+        if "ORB_BoW_baseline" in df['models_name'].values:
+            df.loc[df['models_name'] == "ORB_BoW_baseline"] = pd.Series(results_dict)
+        else:
+            df = pd.concat([df, pd.DataFrame([results_dict])], ignore_index=True)
+    else:
+        df = pd.DataFrame([results_dict])
+
+    df.to_csv(csv_path, index=False)
+    print(f"\nResults saved to {csv_path}")
 
 if __name__ == "__main__":
     main()
