@@ -6,8 +6,7 @@
 This study examines how **foundation models** can perform **visual place recognition** without additional training, using the **Mapillary Street-Level Sequences (MSLS)** dataset. We focus on the **London** subset, where the task is to match query images to their corresponding locations in a gallery of geotagged photos.
 
 - **Gallery:** 1,000 images with GPS coordinates  
-- **Queries:** 500 images without location data  
-
+- **Queries:** 500 images without location data
 Our objective is to identify the most visually/spatially relevant matches for each query. To do so, we explore both **traditional BoW approaches** with **zero-shot probing of vision backbones** of recent foundation models.
 ---
 
@@ -164,7 +163,7 @@ where q is the query image, I_i is a gallery image, c_j is the matched centroid,
 | Baseline (no GPS) | 44.8 | 66.6 | 76.0 | **85.0** |
 | **Weighted (α = 0.6)** | **46.4** | **66.6** | **76.2** | 81.8 |
 
-> **Peak performance:** 46.4 % Recall@1 with GPS-weighted hybrid features.
+> **Best performance:** 46.4 % Recall@1 with GPS-weighted hybrid features.
 
 ---
 
@@ -189,9 +188,3 @@ where q is the query image, I_i is a gallery image, c_j is the matched centroid,
 - Wieczorek et al., *Centroid-based retrieval*, 2021  
 
 ---
-
-## Summary
-
-Classic local-feature pipelines remain instructive but limited.  
-Modern **foundation models**, even without adaptation, already capture rich visual semantics sufficient for **city-scale place recognition**.  
-The combination of **DINOv3-H/16+**, **GeM pooling**, and **GPS-aware aggregation** establishes a new reference point for **zero-shot visual localization** in urban environments.
