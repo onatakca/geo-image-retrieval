@@ -60,16 +60,6 @@ def compute_location_centroids(features: np.ndarray, cluster_labels: np.ndarray)
 
 
 def get_cluster_members(cluster_labels: np.ndarray, cluster_id: int) -> np.ndarray:
-    """
-    Get indices of all images belonging to a specific cluster.
-
-    Args:
-        cluster_labels: Array of shape (N,) with cluster assignments
-        cluster_id: ID of the cluster to retrieve
-
-    Returns:
-        member_indices: Array of image indices in the cluster
-    """
     return np.where(cluster_labels == cluster_id)[0]
 
 
@@ -84,12 +74,9 @@ def compute_gps_distances(loc1: np.ndarray, loc2: np.ndarray) -> np.ndarray:
     Returns:
         distances: Array of shape (N, M) with pairwise distances
     """
-    # Use only x, y coordinates
     coords1 = loc1[:, :2]
     coords2 = loc2[:, :2]
 
-    # Compute pairwise Euclidean distances
-    # (N, 2) -> (N, 1, 2), (M, 2) -> (1, M, 2)
     diff = coords1[:, np.newaxis, :] - coords2[np.newaxis, :, :]
     distances = np.sqrt(np.sum(diff**2, axis=2))
 
